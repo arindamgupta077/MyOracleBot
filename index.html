@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arindam's Oracle AI Chatbot</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      text-align: center;
+      padding: 1rem;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 30px rgba(0,0,0,0.1);
+    }
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    #chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #messages {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    .message {
+      margin: 0.5rem 0;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      max-width: 70%;
+      white-space: pre-wrap;
+    }
+    .user {
+      background: rgba(0,255,255,0.2);
+      align-self: flex-end;
+    }
+    .bot {
+      background: rgba(255,255,255,0.1);
+      align-self: flex-start;
+    }
+    #input-container {
+      display: flex;
+      padding: 1rem;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+    }
+    #user-input {
+      flex: 1;
+      padding: 0.75rem;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+    }
+    #send-btn {
+      margin-left: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: linear-gradient(45deg, #00c6ff, #0072ff);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    #send-btn:hover {
+      transform: scale(1.05);
+    }
+    .loader {
+      display: none;
+      text-align: center;
+      padding: 0.5rem;
+      font-style: italic;
+      color: #00c6ff;
+    }
+    .bold-point {
+      font-weight: bold;
+      color: #00ffae;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Arindam's Oracle AI Chatbot</h1>
+    <p>Created by Arindam Gupta</p>
+  </header>
+  <div id="chat-container">
+    <div id="messages"></div>
+    <div class="loader" id="loader">Thinking...</div>
+    <div id="input-container">
+      <input type="text" id="user-input" placeholder="Ask me about Oracle Database..." />
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const API_KEY = "YOUR_API_KEY"; // Replace with your API key
+    let chatHistory = [];
+
+    async function sendMessage() {
+      const inputField = document.getElementById('user-input');
+      const loader = document.getElementById('loader');
+      const message = inputField.value.trim();
+      if (!message) return;
+
+      addMessage(message, 'user');
+      chatHistory.push({ role: 'user', content: message });
+      inputField.value = '';
+      loader.style.display = 'block';
+
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyB33sj2vjCWAJJSnSxTFoHLdUovqa0Kxyo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: chatHistory.map(msg => ({ role: msg.role, parts: [{ text: msg.content }] })),
+            systemInstruction: {
+              role: 'system',
+              parts: [{ text: `You are an Oracle Database Instructor. You are created or made by Arindam Gupta. Reply only to Oracle DB-related questions. Otherwise, refuse politely or rudely.` }]
+            }
+          })
+        });
+
+        const data = await response.json();
+        let botMessage = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No valid response.";
+        botMessage = botMessage.replace(/^(\d+\.|•)/gm, match => `<span class="bold-point">${match}</span>`);
+        addMessage(botMessage, 'bot');
+        chatHistory.push({ role: 'model', content: botMessage });
+      } catch (error) {
+        addMessage("Error getting response", 'bot');
+      } finally {
+        loader.style.display = 'none';
+      }
+    }
+
+    function addMessage(text, sender) {
+      const messagesDiv = document.getElementById('messages');
+      const msg = document.createElement('div');
+      msg.classList.add('message', sender);
+      msg.innerHTML = text;
+      messagesDiv.appendChild(msg);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    document.getElementById('send-btn').addEventListener('click', sendMessage);
+    document.getElementById('user-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
